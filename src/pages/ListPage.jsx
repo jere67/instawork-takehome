@@ -23,30 +23,30 @@ export default function ListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-900">
       <div>
         {/* primary heading */}
-        <header className="h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4">
+        <header className="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
+          <a href="/"><div className="flex items-center space-x-4">
+            <h1 className="text-lg font-semibold text-white">Instawork Team</h1>
+          </div></a>
           <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-semibold dark:text-white">Instawork Team</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            <Bell className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            <UserCircle className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+            <Clock className="w-5 h-5 text-gray-400" />
+            <Bell className="w-5 h-5 text-gray-400" />
+            <UserCircle className="w-6 h-6 text-gray-400" />
           </div>
         </header>
 
         {/* sub heading */}
-        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="bg-gray-900 border-b border-gray-700 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Home</span>
+              <span className="text-sm text-gray-400">Home</span>
               <ChevronRight className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Team Members</span>
+              <a href="/"><span className="text-sm text-gray-400">Team Members</span></a>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-gray-400">
                 You have {members.length} team {members.length === 1 ? "member" : "members"}.
               </span>
             </div>
@@ -59,9 +59,9 @@ export default function ListPage() {
             {/* add new members */}
             <button
               onClick={() => navigate("/add")}
-              className="h-[300px] rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 flex items-center justify-center transition-colors"
+              className="h-[300px] rounded-lg border-2 border-dashed border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 flex items-center justify-center transition-colors"
             >
-              <Plus className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+              <Plus className="w-8 h-8 text-gray-600" />
             </button>
 
             {/* list members */}
@@ -69,39 +69,39 @@ export default function ListPage() {
               <div
                 key={member.id}
                 onClick={() => navigate(`/edit/${member.id}`)}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <UserCircle className="w-12 h-12 text-gray-400 dark:text-gray-600" />
+                      <UserCircle className="w-12 h-12 text-gray-600" />
                       <div>
                         <h3 className="font-medium dark:text-white">
                           {member.first_name} {member.last_name}
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-400">
                           {member.role === "admin" ? "Admin" : "Member"}
                         </p>
                       </div>
                     </div>
-                    <button className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button className="p-1 rounded-full hover:bg-gray-700">
                       <MoreVertical className="w-4 h-4 text-gray-400" />
                     </button>
                   </div>
 
                   <div className="mt-4">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{member.email}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{member.phone}</div>
+                    <div className="text-sm text-gray-400">{member.email}</div>
+                    <div className="text-sm text-gray-400">{member.phone}</div>
                   </div>
 
                   <div className="mt-4">
                     <div className="flex flex-wrap gap-2">
                       {member.role === "admin" && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-900 text-blue-700 dark:text-blue-300">
                           Admin
                         </span>
                       )}
-                      <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      <span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-700 dark:text-gray-300">
                         Active
                       </span>
                     </div>
