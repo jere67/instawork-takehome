@@ -2,7 +2,25 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { UserCircle, Clock, Bell, ChevronRight } from "lucide-react"
+import { UserCircle, Clock, Bell, ChevronRight, X } from "lucide-react"
+
+const ErrorModal = ({ isOpen, onClose, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-white">Error</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-gray-300">{message}</p>
+      </div>
+    </div>
+  );
+};
 
 export default function AddPage() {
   const [formData, setFormData] = useState({
@@ -12,19 +30,63 @@ export default function AddPage() {
     email: "",
     role: "regular",
   })
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [phoneError, setPhoneError] = useState("")
 
   const navigate = useNavigate()
 
+  const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^\+?1?\d{10}$/
+    if (!phone) return "Phone number is required."
+    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
+      return "Please enter a valid 10-digit phone number."
+    }
+    return "";
+  }
+
+  const formatPhoneNumber = (value) => {
+  if (!value) return value;
+
+    const phoneNumber = value.replace(/[^\d]/g, '');
+    const phoneNumberLength = phoneNumber.length;
+
+    if (phoneNumberLength < 4) return phoneNumber;
+    if (phoneNumberLength < 7) {
+        return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    }
+
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+
+  };
+
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prevData) => ({
+    const { name, value } = e.target;
+    if (name === "phone") {
+      const formattedValue = formatPhoneNumber(value);
+      setFormData((prevData) => ({
+          ...prevData,
+          [name]: formattedValue,
+      }));
+        const error = validatePhoneNumber(value.replace(/\D/g, ''));
+      setPhoneError(error);
+    } else {
+      setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-    }))
+      }));
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    const phoneError = validatePhoneNumber(formData.phone.replace(/\D/g, ''))
+    if (phoneError) {
+      setPhoneError(phoneError)
+      return;
+    }
+
     const response = await fetch("/api/team-members/", {
       method: "POST",
       headers: {
@@ -35,11 +97,28 @@ export default function AddPage() {
 
     if (response.ok) {
       navigate("/")
+    } else {
+      const errorData = await response.json()
+      if (errorData.email) {
+        setErrorMessage(errorData.email[0])
+        setShowErrorModal(true)
+      }
     }
+  }
+
+  const handleModalClose = () => {
+    setShowErrorModal(false)
+    setErrorMessage("")
   }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      <ErrorModal 
+        isOpen={showErrorModal}
+        onClose={handleModalClose}
+        message={errorMessage}
+      />
+      
       {/* primary heading */}
       <header className="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
         <a href="/"><div className="flex items-center space-x-4">
@@ -100,15 +179,20 @@ export default function AddPage() {
                 className="w-full p-2 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                 required
               />
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Phone"
-                className="w-full p-2 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                required
-              />
+              <div>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone (10 digits)"
+                  className={`w-full p-2 rounded-md bg-gray-900 border ${phoneError ? 'border-red-500' : 'border-gray-700'} text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none`}
+                  required
+                />
+                {phoneError && (
+                  <p className="text-sm text-red-500 mt-1">{phoneError}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -153,4 +237,3 @@ export default function AddPage() {
     </div>
   )
 }
-

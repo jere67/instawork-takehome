@@ -2,7 +2,52 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { UserCircle, Clock, Bell, ChevronRight } from "lucide-react"
+import { UserCircle, Clock, Bell, ChevronRight, X } from "lucide-react"
+
+const ErrorModal = ({ isOpen, onClose, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-white">Error</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-gray-300">{message}</p>
+      </div>
+    </div>
+  );
+};
+
+const ConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 className="text-lg font-semibold text-white mb-4">Confirm Deletion</h3>
+        <p className="text-gray-300 mb-6">Are you sure you want to delete this team member?</p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={onCancel}
+            className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function EditPage() {
   const [formData, setFormData] = useState({
@@ -12,6 +57,11 @@ export default function EditPage() {
     email: "",
     role: "regular",
   })
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [phoneError, setPhoneError] = useState("")
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+
   const navigate = useNavigate()
   const { id } = useParams()
 
@@ -29,16 +79,57 @@ export default function EditPage() {
     fetchMember()
   }, [id, navigate])
 
+  const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^\+?1?\d{10}$/
+    if (!phone) return "Phone number is required."
+    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
+      return "Please enter a valid 10-digit phone number."
+    }
+    return "";
+  }
+
+const formatPhoneNumber = (value) => {
+  if (!value) return value;
+
+    const phoneNumber = value.replace(/[^\d]/g, '');
+    const phoneNumberLength = phoneNumber.length;
+
+    if (phoneNumberLength < 4) return phoneNumber;
+    if (phoneNumberLength < 7) {
+        return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    }
+
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+
+  };
+
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prevData) => ({
+    const { name, value } = e.target;
+    if (name === "phone") {
+      const formattedValue = formatPhoneNumber(value);
+      setFormData((prevData) => ({
+          ...prevData,
+          [name]: formattedValue,
+      }));
+        const error = validatePhoneNumber(value.replace(/\D/g, ''));
+      setPhoneError(error);
+    } else {
+      setFormData((prevData) => ({
       ...prevData,
       [name]: value,
-    }))
+      }));
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const phoneError = validatePhoneNumber(formData.phone)
+
+    if (phoneError) {
+      setPhoneError(phoneError)
+      return;
+    }
+
     const response = await fetch(`/api/team-members/${id}/`, {
       method: "PUT",
       headers: {
@@ -49,23 +140,50 @@ export default function EditPage() {
 
     if (response.ok) {
       navigate("/")
-    }
-  }
-
-  const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this team member?")) {
-      const response = await fetch(`/api/team-members/${id}/`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        navigate("/")
+    } else {
+      const errorData = await response.json()
+      if (errorData.email) {
+        setErrorMessage(errorData.email[0])
+        setShowErrorModal(true)
       }
     }
   }
 
+  const handleDelete = async () => {
+    setShowConfirmationModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowConfirmationModal(false);
+    const response = await fetch(`/api/team-members/${id}/`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      navigate("/");
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmationModal(false);
+  };
+
+
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* modals for better ux */}
+      <ErrorModal 
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        message={errorMessage}
+      />
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
+
       {/* primary heading */}
       <header className="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
         <a href="/"><div className="flex items-center space-x-4">
@@ -104,7 +222,7 @@ export default function EditPage() {
                   value={formData.first_name}
                   onChange={handleChange}
                   placeholder="First Name"
-                  className="w-full p-2 rounded-md bg-[#1A1F36] border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  className="w-full p-2 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                   required
                 />
                 <input
@@ -113,7 +231,7 @@ export default function EditPage() {
                   value={formData.last_name}
                   onChange={handleChange}
                   placeholder="Last Name"
-                  className="w-full p-2 rounded-md bg-[#1A1F36] border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  className="w-full p-2 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                   required
                 />
               </div>
@@ -123,18 +241,23 @@ export default function EditPage() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Email"
-                className="w-full p-2 rounded-md bg-[#1A1F36] border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                className="w-full p-2 rounded-md bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                 required
               />
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Phone"
-                className="w-full p-2 rounded-md bg-[#1A1F36] border border-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                required
-              />
+              <div>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Phone (10 digits)"
+                  className={`w-full p-2 rounded-md bg-gray-900 border ${phoneError ? 'border-red-500' : 'border-gray-700'} text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none`}
+                  required
+                />
+                {phoneError && (
+                  <p className="mt-1 text-sm text-red-500">{phoneError}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -147,7 +270,7 @@ export default function EditPage() {
                     value="regular"
                     checked={formData.role === "regular"}
                     onChange={handleChange}
-                    className="form-radio text-blue-600 focus:ring-blue-500 bg-[#1A1F36] border-gray-700"
+                    className="form-radio text-blue-600 focus:ring-blue-500 bg-gray-900 border-gray-700"
                   />
                   <span>Regular - Can't delete members</span>
                 </label>
@@ -158,7 +281,7 @@ export default function EditPage() {
                     value="admin"
                     checked={formData.role === "admin"}
                     onChange={handleChange}
-                    className="form-radio text-blue-600 focus:ring-blue-500 bg-[#1A1F36] border-gray-700"
+                    className="form-radio text-blue-600 focus:ring-blue-500 bg-gray-900 border-gray-700"
                   />
                   <span>Admin - Can delete members</span>
                 </label>
@@ -186,4 +309,3 @@ export default function EditPage() {
     </div>
   )
 }
-
