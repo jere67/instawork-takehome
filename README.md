@@ -61,7 +61,8 @@ Special thanks to the authors of those resources for making it possible for me t
 
 3. Run database migrations:
 
-`python manage.py makemigrations python manage.py migrate`
+`python manage.py makemigrations` 
+`python manage.py migrate`
 
 4. Start the Django development server:
 
